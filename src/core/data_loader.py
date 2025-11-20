@@ -3,7 +3,8 @@ from typing import Optional
 import pandas as pd
 
 # Default path: project_root/data/maharashtra-forts.csv
-DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "maharashtra-forts.csv"
+DATA_PATH = Path(__file__).resolve(
+).parents[2] / "data" / "maharashtra-forts.csv"
 
 
 def load_forts(path: Optional[str] = None) -> pd.DataFrame:
@@ -38,7 +39,8 @@ def load_forts(path: Optional[str] = None) -> pd.DataFrame:
         except Exception:
             # coerce and fill with index if conversion fails
             df["fort_id"] = pd.to_numeric(df["fort_id"], errors="coerce")
-            df["fort_id"] = df["fort_id"].fillna(range(1, len(df) + 1)).astype(int)
+            df["fort_id"] = df["fort_id"].fillna(
+                range(1, len(df) + 1)).astype(int)
 
     # fill NA textual cols with empty strings
     text_cols = [
@@ -60,5 +62,5 @@ def load_forts(path: Optional[str] = None) -> pd.DataFrame:
     for col in num_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-
+    df = df.fillna(value='Information Not Available')
     return df

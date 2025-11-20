@@ -74,9 +74,13 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
+__pycache__
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# llm
+rag_cache/*
 
 # IPython
 profile_default/

@@ -1,172 +1,202 @@
-import requests
 import dash
-from dash import Dash, dcc, html, Input, Output, State
+from dash import dcc, html
 import dash_bootstrap_components as dbc
 
-API_BASE = "http://localhost:8000"  # Update if backend runs elsewhere
+app = dash.Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.MINTY],
+    title="Pride of Sahyadri"
+)
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+# ----------------------------------------------------------------
+# Header Section
+# ----------------------------------------------------------------
+header = dbc.Navbar(
+    dbc.Container([
+        html.H2("🏰 Pride of Sahyadri", className="text-white mb-0"),
+    ]),
+    color="dark",
+    className="mb-4", style={"textAlign": "center"}
+)
 
-# -------------------- Layout --------------------
-app.layout = dbc.Container(
+# ----------------------------------------------------------------
+# Sidebar (Left Panel)
+# ----------------------------------------------------------------
+sidebar = dbc.Card(
     [
-        html.H2("Maharashtra Forts Dashboard", className="my-3 text-center"),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        html.H5("🔍 Search Forts"),
-                        dcc.Input(
-                            id="search-input",
-                            type="text",
-                            placeholder="Type fort name...",
-                            className="form-control",
-                            debounce=True,
-                        ),
-                        html.Br(),
-                        dbc.Button(
-                            "Search",
-                            id="search-btn",
-                            color="primary",
-                            className="mt-2 w-100",
-                        ),
-                        html.Hr(),
-                        html.Div(id="fort-list"),
-                    ],
-                    width=4,
+        html.H5("🔎 Search & Filters", className="card-title"),
+        html.Hr(),
+
+        # Search input
+        dbc.Input(
+            id="search-input",
+            type="text",
+            placeholder="Search forts by name, keyword...",
+            className="mb-3",
+        ),
+
+        # District filter
+        html.Label("District"),
+        dcc.Dropdown(
+            id="filter-district",
+            placeholder="Select district",
+            multi=False,
+            className="mb-2"
+        ),
+
+        # Fort type
+        html.Label("Fort Type"),
+        dcc.Dropdown(
+            id="filter-type",
+            placeholder="Select fort type",
+            multi=False,
+            className="mb-2"
+        ),
+
+        # Trek difficulty
+        html.Label("Trek Difficulty"),
+        dcc.Dropdown(
+            id="filter-difficulty",
+            placeholder="Select difficulty",
+            multi=False,
+            className="mb-2"
+        ),
+
+        # Season filter
+        html.Label("Best Season"),
+        dcc.Dropdown(
+            id="filter-season",
+            placeholder="Select season",
+            multi=False,
+            className="mb-4"
+        ),
+
+        # dbc.Button("Reset Filters", id="reset-btn",
+        #            color="secondary", block=True)
+        dbc.Button(
+            "Reset Filters",
+            id="reset-btn",
+            color="secondary",
+            className="w-100"   # full width
+        ),
+    ],
+    body=True,
+    className="shadow-sm",
+    style={"height": "100vh", "overflowY": "auto"},
+)
+
+# ----------------------------------------------------------------
+# Main Content Tabs (Right Panel)
+# ----------------------------------------------------------------
+tabs = dbc.Tabs(
+    [
+        # Explore Tab
+        dbc.Tab(
+            label="Explore",
+            tab_id="tab-explore",
+            children=[
+                html.Br(),
+                html.H4("Explore Forts"),
+
+                # Map placeholder
+                html.Div(
+                    id="map-container",
+                    children=html.Div("Map will load here...",
+                                      className="text-muted"),
+                    style={"height": "400px", "background": "#f8f9fa",
+                           "border": "1px solid #ddd"},
+                    className="mb-4"
                 ),
-                dbc.Col(
-                    [
-                        html.H5("🏰 Fort Details"),
-                        html.Div(
-                            id="fort-details", className="border p-3 bg-light rounded"
-                        ),
-                        html.Hr(),
-                        html.H5("📍 Nearby Forts"),
-                        dbc.Row(
-                            [
-                                dbc.Col(
-                                    dcc.Input(
-                                        id="lat-input",
-                                        type="number",
-                                        placeholder="Latitude",
-                                        className="form-control",
-                                    )
-                                ),
-                                dbc.Col(
-                                    dcc.Input(
-                                        id="lon-input",
-                                        type="number",
-                                        placeholder="Longitude",
-                                        className="form-control",
-                                    )
-                                ),
-                            ],
-                            className="mb-2",
-                        ),
-                        dbc.Button(
-                            "Find Nearby",
-                            id="nearby-btn",
-                            color="success",
-                            className="w-100",
-                        ),
-                        html.Div(id="nearby-list", className="mt-3"),
+
+                # Fort card list placeholder
+                html.Div(
+                    id="fort-list",
+                    children=[
+                        html.Div("Fort list will appear here...",
+                                 className="text-muted")
                     ],
-                    width=8,
                 ),
             ]
         ),
+
+        # Recommendations Tab
+        dbc.Tab(
+            label="Recommendations",
+            tab_id="tab-recommend",
+            children=[
+                html.Br(),
+                html.H4("Recommended Forts"),
+
+                # Nearby
+                html.H5("Nearby Forts"),
+                html.Div("Results will appear here...", id="nearby-container",
+                         className="mb-4 text-muted"),
+
+                # Similar
+                html.H5("Similar Forts"),
+                html.Div("Results will appear here...", id="similar-container",
+                         className="text-muted"),
+            ]
+        ),
+
+        # Insights Tab
+        dbc.Tab(
+            label="Insights",
+            tab_id="tab-insights",
+            children=[
+                html.Br(),
+                html.H4("Cluster Insights"),
+
+                html.Div("Cluster charts will appear here...", id="cluster-container", # NOQA E501
+                         className="text-muted")
+            ]
+        ),
+
+        # RAG Q/A Tab
+        dbc.Tab(
+            label="Q&A",
+            tab_id="tab-qa",
+            children=[
+                html.Br(),
+                html.H4("Ask a question about Maharashtra Forts"),
+
+                dbc.Input(
+                    id="qa-input",
+                    placeholder="Ask anything... e.g. 'Which forts were important during the Maratha Empire?'", # NOQA E501
+                    type="text",
+                    className="mb-3"
+                ),
+
+                dbc.Button("Search", id="qa-btn",
+                           color="primary", className="mb-3"),
+
+                html.Div(id="qa-output",
+                         children="Answers will appear here...",
+                         className="text-muted")
+            ]
+        ),
     ],
+    id="main-tabs",
+    active_tab="tab-explore",
+)
+
+# ----------------------------------------------------------------
+# Layout Grid
+# ----------------------------------------------------------------
+app.layout = dbc.Container(
     fluid=True,
+    children=[
+        header,
+
+        dbc.Row([
+            dbc.Col(sidebar, width=3),
+            dbc.Col(tabs, width=9)
+        ])
+    ]
 )
 
-
-# -------------------- Callbacks --------------------
-@app.callback(
-    Output("fort-list", "children"),
-    Input("search-btn", "n_clicks"),
-    State("search-input", "value"),
-)
-def search_forts(n, query):
-    if not n:
-        return "Type a fort name and click Search"
-    if not query:
-        return "Enter text to search"
-
-    r = requests.get(f"{API_BASE}/forts", params={"q": query})
-    data = r.json()
-
-    if len(data) == 0:
-        return "No forts found."
-
-    buttons = []
-    for f in data:
-        btn = dbc.Button(
-            f"{f['fort_id']}: {f['name']} ({f['district']})",
-            id={"type": "fort-btn", "index": f["fort_id"]},
-            color="secondary",
-            size="sm",
-            className="my-1 w-100",
-        )
-        buttons.append(btn)
-    return buttons
-
-
-@app.callback(
-    Output("fort-details", "children"),
-    Input({"type": "fort-btn", "index": dash.dependencies.ALL}, "n_clicks"),
-)
-def show_details(btn_clicks):
-    if not btn_clicks:
-        return "Select a fort from the left."
-
-    # Identify which button was clicked
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return "Select a fort from the left."
-
-    btn_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    btn_id = eval(btn_id)  # {'type': 'fort-btn', 'index': id}
-    fort_id = btn_id["index"]
-
-    r = requests.get(f"{API_BASE}/forts/{fort_id}")
-    f = r.json()
-
-    return html.Div(
-        [
-            html.H4(f["name"]),
-            html.P(f"District: {f.get('district', '-')}", className="mt-2"),
-            html.P(f"Type: {f.get('type', '-')}", className="mt-1"),
-            html.P(f"Elevation: {f.get('elevation_m', '-')}", className="mt-1"),
-            html.P(f"Difficulty: {f.get('trek_difficulty', '-')}", className="mt-1"),
-            html.P(f"Notes: {f.get('notes', '-')[:200]}...", className="mt-3"),
-        ]
-    )
-
-
-@app.callback(
-    Output("nearby-list", "children"),
-    Input("nearby-btn", "n_clicks"),
-    State("lat-input", "value"),
-    State("lon-input", "value"),
-)
-def nearby(n, lat, lon):
-    if not n:
-        return "Enter coordinates to search nearby forts."
-    if not lat or not lon:
-        return "Provide both latitude and longitude."
-
-    r = requests.get(
-        f"{API_BASE}/recommend/nearby", params={"lat": lat, "lon": lon, "k": 5}
-    )
-    data = r.json()
-
-    if len(data) == 0:
-        return "No nearby forts found."
-
-    return html.Ul([html.Li(f"{f['name']} — {f['distance_km']:.2f} km") for f in data])
-
-
-# -------------------- Run App --------------------
+# ----------------------------------------------------------------
+# Dash Starter (for local debugging)
+# ----------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=False, port=8050)
+    app.run_server(debug=False)

@@ -1,16 +1,20 @@
 from fastapi import FastAPI
 import sys
-sys.path.append("/home/pamya/Python/ML_Projects/maharashtra-forts")
-from src.api.routers import forts, search, clustering, recommend
+sys.path.append("/home/vasant/projects/Pride-of-Sahyadri")
+from src.api.routers import forts, search, clustering, recommend # NOQA E402
 
 app = FastAPI(title="Maharashtra Forts API")
 
 # Register routers
+
+
 def init_routes(app: FastAPI):
     app.include_router(forts.router, prefix="/forts", tags=["forts"])
     app.include_router(search.router, prefix="/search", tags=["search"])
-    app.include_router(clustering.router, prefix="/clusters", tags=["clusters"])
-    app.include_router(recommend.router, prefix="/recommend", tags=["recommend"])
+    app.include_router(clustering.router,
+                       prefix="/clusters", tags=["clusters"])
+    app.include_router(
+        recommend.router, prefix="/recommend", tags=["recommend"])
 
 
 init_routes(app)

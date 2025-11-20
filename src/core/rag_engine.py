@@ -1,22 +1,28 @@
-from sentence_transformers import SentenceTransformer, util
+import os
+import json
 import torch
+from sentence_transformers import SentenceTransformer, util
 
 
 class RAGEngine:
-    def __init__(self):
+    def __init__(self, cache_dir="rag_cache"):
         self.df = None
         self.corpus = []
         self.embeddings = None
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.cache_dir = cache_dir
+
+        # Create directory if missing
+        os.makedirs(self.cache_dir, exist_ok=True)
+
+        # Cache file paths
+        self.corpus_file = os.path.join(cache_dir, "corpus.json")
+        self.emb_file = os.path.join(cache_dir, "embeddings.pt")
 
     # -------------------------------------------------------
     # 1. LOAD DATA
     # -------------------------------------------------------
     def load_data(self, df):
-        """
-        Loads DataFrame and builds concatenated corpus for embeddings.
-        Output of RAG = original df rows (no processing).
-        """
         self.df = df
         self.corpus = []
 
@@ -27,48 +33,65 @@ class RAGEngine:
         ]
 
         for _, row in df.iterrows():
-            # Safe text fusion without modifying text content
             parts = [str(row.get(col, "")) for col in text_columns]
-            combined = " | ".join(parts)  # simple join, no formatting
-
+            combined = " | ".join(parts)
             self.corpus.append(combined)
 
-        print(f"RAGEngine: Loaded corpus with {len(self.corpus)} items.")
+        # Save corpus locally for future reuse
+        with open(self.corpus_file, "w") as f:
+            json.dump(self.corpus, f)
+
+        print(f"RAGEngine: Corpus created with {len(self.corpus)} entries.")
         return self
 
     # -------------------------------------------------------
-    # 2. BUILD INDEX
+    # 2. BUILD OR LOAD INDEX
     # -------------------------------------------------------
     def build_index(self):
-        if not self.corpus:
-            raise ValueError("Data not loaded. Call load_data() first.")
+        # Try loading cached embeddings
+        if os.path.exists(self.emb_file):
+            print("RAGEngine: Loading cached embeddings...")
+            self.embeddings = torch.load(self.emb_file)
+            print("RAGEngine: Embeddings loaded from cache.")
+            return self
 
-        print("RAGEngine: Generating embeddings...")
-        self.embeddings = self.model.encode(self.corpus, convert_to_tensor=True)
-        print("RAGEngine: Index built.")
+        # Else build embeddings fresh
+        print("RAGEngine: Building new embeddings...")
+        self.embeddings = self.model.encode(
+            self.corpus,
+            convert_to_tensor=True
+        )
+
+        # Save embeddings to disk
+        torch.save(self.embeddings, self.emb_file)
+        print("RAGEngine: Embeddings created and cached.")
+
         return self
 
     # -------------------------------------------------------
-    # 3. QUERY (NO POST PROCESSING)
+    # 3. QUERY DOCUMENTS
     # -------------------------------------------------------
     def query(self, user_query, k=5):
-        """
-        RAG search:
-        - Uses semantic similarity
-        - Returns ORIGINAL dataframe rows (as dictionaries)
-        - NO transformations, NO natural language formatting
-        """
-
         if self.embeddings is None:
             raise ValueError("Index not built. Call build_index().")
 
-        # Encode query
         q_emb = self.model.encode(user_query, convert_to_tensor=True)
-
-        # Compute similarity
         scores = util.pytorch_cos_sim(q_emb, self.embeddings)[0]
+
         top_idx = torch.topk(scores, k).indices.tolist()
 
-        # Return original DataFrame rows EXACTLY as stored
-        results = [self.df.iloc[i].to_dict() for i in top_idx]
-        return results
+        # Return raw dataframe rows (no formatting)
+        return [self.df.iloc[i].to_dict() for i in top_idx]
+
+    # -------------------------------------------------------
+    # Extra: force rebuild (if needed)
+    # -------------------------------------------------------
+    def rebuild_index(self):
+        """Manually rebuild all embeddings, ignoring cache."""
+        print("RAGEngine: Force rebuilding embeddings...")
+        self.embeddings = self.model.encode(
+            self.corpus, convert_to_tensor=True
+        )
+        torch.save(self.embeddings, self.emb_file)
+        print("RAGEngine: Rebuild complete.")
+        return self

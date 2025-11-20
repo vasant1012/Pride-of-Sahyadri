@@ -8,7 +8,7 @@ DF = load_forts()
 
 
 @router.get("/")
-def list_forts(q: str | None = None, district: str | None = None, limit: int = 100):
+def list_forts(q: str | None = None, district: str | None = None, limit: int = 10):  # NOQA
     """List forts with optional search and district filters.
 
     Args:
@@ -30,7 +30,8 @@ def list_forts(q: str | None = None, district: str | None = None, limit: int = 1
     if district:
         df = df[df["district"].str.lower() == district.lower()]
 
-    return df.head(limit).to_dict(orient="records")
+    response = df.head(limit).to_dict(orient="records")
+    return response
 
 
 @router.get("/{fort_id}")
@@ -39,4 +40,5 @@ def get_fort(fort_id: int):
     row = DF[DF["fort_id"] == fort_id]
     if row.empty:
         raise HTTPException(status_code=404, detail="Fort not found")
-    return row.iloc[0].to_dict()
+    response = row.iloc[0].to_dict()
+    return response
