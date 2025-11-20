@@ -1,0 +1,27 @@
+# === CORE ===
+numpy==1.26.4
+pandas==2.1.4
+scikit-learn==1.3.2
+scipy==1.11.4
+
+# === ML / NLP ===
+huggingface-hub==0.25.2
+sentence-transformers==2.2.2
+transformers==4.35.2
+torch==2.1.2
+
+# === API FRAMEWORK ===
+fastapi==0.103.2
+uvicorn[standard]==0.23.2
+
+# === GEOSPATIAL ===
+geopy==2.4.0
+
+# === UTILITIES ===
+python-multipart==0.0.6
+pydantic==1.10.13
+joblib==1.3.2
+threadpoolctl==3.2.0
+
+# === TESTING ===
+pytest==7.4.3
