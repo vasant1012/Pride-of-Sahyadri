@@ -1,51 +1,34 @@
 from fastapi import APIRouter
-from src.core.data_loader import load_forts
-from src.core.cluster_engine import GeoCluster
+from src.core.cluster_engine import ClusterEngine
 
-router = APIRouter()
+router = APIRouter(prefix="/clusters", tags=["Clustering"])
 
-# Load dataset
-DF = load_forts()
-
-# Initialize clustering engine
-clusterer = GeoCluster(n_clusters=8)
-
-try:
-    DF = clusterer.fit(DF)
-except Exception as e:
-    # Fallback: assign cluster 0 if clustering fails
-    DF = DF.copy()
-    DF['cluster'] = 0
-    INIT_ERROR = str(e)
-else:
-    INIT_ERROR = None
-
+# Build clusters at startup
+cluster_engine = ClusterEngine()
+cluster_engine.build_clusters()
 
 @router.get("/")
-def get_clusters():
-    """Return size of each cluster.
-
-    Returns:
-        dict: {cluster_id: count}
+def get_cluster_counts():
     """
-    if INIT_ERROR:
-        return {"warning": f"Clustering fallback used: {INIT_ERROR}"}
-    return DF.groupby('cluster').size().to_dict()
-
-
-@router.get("/predict")
-def predict_cluster(lat: float, lon: float):
-    """Predict which cluster a (lat, lon) coordinate belongs to.
-
-    Args:
-        lat (float): latitude
-        lon (float): longitude
-
-    Returns:
-        dict: {'cluster': int} or {'error': str}
+    Return {cluster_id: count}
     """
-    try:
-        cluster_id = clusterer.predict(lat, lon)
-        return {"cluster": int(cluster_id)}
-    except Exception as e:
-        return {"error": str(e)}
+    return cluster_engine.get_cluster_counts()
+
+
+@router.get("/data")
+def get_clustered_forts():
+    """
+    Returns list of forts with `cluster` label added
+    """
+    df = cluster_engine.get_clustered_data()
+    return df.to_dict(orient="records")
+
+
+@router.post("/rebuild/{n_clusters}")
+def rebuild_clusters(n_clusters: int):
+    """
+    Recompute clusters with a new number of clusters.
+    """
+    cluster_engine.n_clusters = n_clusters
+    df, counts = cluster_engine.build_clusters()
+    return {"clusters": counts, "n_clusters": n_clusters}

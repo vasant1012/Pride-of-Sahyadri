@@ -1,63 +1,108 @@
-from sklearn.cluster import KMeans
 import pandas as pd
 import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from pathlib import Path
+
+CSV_PATH = Path("data/maharashtra-forts.csv")   # your dataset path
 
 
-class GeoCluster:
-    """KMeans-based geospatial clustering for forts.
-
-    If there are not enough valid (lat, lon) pairs to form `n_clusters`,
-    a fallback cluster assignment of 0 is applied to all rows.
-    """
-
-    def __init__(self, n_clusters: int = 8, random_state: int = 42):
+class ClusterEngine:
+    def __init__(self, n_clusters=6):
         self.n_clusters = n_clusters
-        self.random_state = random_state
-        self.model = None
+        self.df = None
+        self.cluster_counts = None
+        self.scaler = None
+        self.kmeans = None
 
-    def fit(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Fit geospatial clustering and return df with new 'cluster' column.
+    # -----------------------------
+    # Load + Preprocess
+    # -----------------------------
+    def load_data(self):
+        df = pd.read_csv(CSV_PATH)
+        df = df.copy()
 
-        Args:
-            df (pd.DataFrame): DataFrame with 'latitude' and 'longitude'
+        # Standardize latitude/longitude column names
+        df["latitude"] = pd.to_numeric(
+            df.get("latitude", df.get("lat")), errors="coerce"
+        )
+        df["longitude"] = pd.to_numeric(
+            df.get("longitude", df.get("lng")), errors="coerce"
+        )
 
-        Returns:
-            pd.DataFrame: copy of df with cluster labels added.
-        """
-        coords = df[['latitude', 'longitude']].dropna()
+        df["elevation_m"] = pd.to_numeric(df["elevation_m"], errors="coerce")
+        df["trek_time_hours"] = pd.to_numeric(df["trek_time_hours"], errors="coerce")
 
-        # If not enough data points, fallback to a single cluster
-        if coords.shape[0] < max(1, self.n_clusters):
-            df2 = df.copy()
-            df2['cluster'] = 0
-            self.model = None
-            return df2
+        # Difficulty → numeric
+        df["difficulty_num"] = df["trek_difficulty"].apply(self.map_difficulty)
 
-        # Fit KMeans
-        self.model = KMeans(n_clusters=self.n_clusters, random_state=self.random_state)
-        self.model.fit(coords)
+        # Impute missing values
+        df["latitude"].fillna(df["latitude"].median(), inplace=True)
+        df["longitude"].fillna(df["longitude"].median(), inplace=True)
+        df["elevation_m"].fillna(df["elevation_m"].median(), inplace=True)
+        df["trek_time_hours"].fillna(df["trek_time_hours"].median(), inplace=True)
+        df["difficulty_num"].fillna(df["difficulty_num"].median(), inplace=True)
 
-        # For rows where lat/lon missing, fill with (0,0) safely
-        df_filled = df[['latitude', 'longitude']].fillna(0)
-        labels = self.model.predict(df_filled)
+        self.df = df
+        return df
 
-        df2 = df.copy()
-        df2['cluster'] = labels
-        return df2
+    @staticmethod
+    def map_difficulty(val):
+        if pd.isna(val):
+            return np.nan
+        s = str(val).lower()
+        if "easy" in s:
+            return 1
+        if "medium" in s:
+            return 2
+        if "hard" in s:
+            return 3
+        try:
+            return float(val)
+        except:  # NOQA E722
+            return np.nan
 
-    def predict(self, lat: float, lon: float) -> int:
-        """Predict cluster for a single coordinate.
+    # -----------------------------
+    # Build Clusters
+    # -----------------------------
+    def build_clusters(self):
+        if self.df is None:
+            self.load_data()
 
-        Args:
-            lat (float): latitude
-            lon (float): longitude
+        features = self.df[
+            ["latitude", "longitude", "elevation_m", "trek_time_hours", "difficulty_num"]
+        ]
 
-        Returns:
-            int: cluster label
-        """
-        if self.model is None:
-            raise RuntimeError('Model not fitted or insufficient data for clustering.')
+        # Scale features
+        self.scaler = StandardScaler()
+        X = self.scaler.fit_transform(features)
 
-        arr = np.array([[lat, lon]])
-        label = self.model.predict(arr)[0]
-        return int(label)
+        # Train KMeans
+        self.kmeans = KMeans(
+            n_clusters=self.n_clusters, random_state=42, n_init=10
+        )
+        labels = self.kmeans.fit_predict(X)
+
+        # Add cluster column
+        self.df["cluster"] = labels.astype(int)
+
+        # Build cluster counts
+        self.cluster_counts = (
+            self.df["cluster"].value_counts().sort_index().to_dict()
+        )
+
+        return self.df, self.cluster_counts
+
+    # -----------------------------
+    # Get Results
+    # -----------------------------
+    def get_clustered_data(self):
+        if self.df is None:
+            self.build_clusters()
+        return self.df
+
+    def get_cluster_counts(self):
+        if self.cluster_counts is None:
+            self.build_clusters()
+        return self.cluster_counts
+

@@ -1,11 +1,10 @@
 from fastapi import FastAPI
 import sys
 sys.path.append("/home/vasant/projects/Pride-of-Sahyadri")
+
 from src.api.routers import forts, search, clustering, recommend # NOQA E402
 
 app = FastAPI(title="Maharashtra Forts API")
-
-# Register routers
 
 
 def init_routes(app: FastAPI):
@@ -23,3 +22,4 @@ init_routes(app)
 @app.get("/")
 def root():
     return {"msg": "Maharashtra Forts API — up and running"}
+
