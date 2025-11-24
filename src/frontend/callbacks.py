@@ -225,6 +225,7 @@ def load_similar(fort_id):
 # =========================================================
 # 7. Cluster Analysis Callback
 # =========================================================
+# Robust Cluster Analysis callback (drop-in replacement)
 @app.dash.callback(
     Output("ca-total-clusters", "children"),
     Output("ca-largest-cluster", "children"),
@@ -237,119 +238,256 @@ def load_similar(fort_id):
     Input("main-tabs", "active_tab"),
 )
 def update_cluster_analysis(active_tab):
+    
+    # Only run when insights tab active
     if active_tab != "tab-cluster":
         raise dash.exceptions.PreventUpdate
 
-    # ---- Fetch Data from API ----
-    clusters = api.get_clusters()  # {0: 50, 1: 40, ...}
-    points = api.get_clustered_forts()  # each fort with cluster label
+    # Fetch cluster counts and clustered forts
+    clusters = api.get_clusters() or {}
+    points = api.get_clustered_forts() or []
 
-    df = pd.DataFrame(points)
+    # Defensive: ensure clusters is dict-like
+    if not isinstance(clusters, dict):
+        try:
+            clusters = dict(clusters)
+        except Exception:
+            clusters = {}
 
-    # ---- Convert numeric columns ----
-    df["elevation_m"] = pd.to_numeric(df["elevation_m"], errors="coerce")
-    df["trek_time_hours"] = pd.to_numeric(df["trek_time_hours"], errors="coerce")
-    df["difficulty_num"] = pd.to_numeric(df["difficulty_num"], errors="coerce")
+    # Placeholder empty figure
+    def empty_fig(title="No data"):
+        import plotly.graph_objects as go
 
-    # ---- Summary Numbers ----
-    total_clusters = len(clusters)
+        fig = go.Figure()
+        fig.add_annotation(text=title, x=0.5, y=0.5, showarrow=False)
+        fig.update_layout(
+            xaxis={"visible": False}, yaxis={"visible": False}, title=title
+        )
+        return fig
 
-    largest_cluster_id = max(clusters, key=lambda k: clusters[k])
-    smallest_cluster_id = min(clusters, key=lambda k: clusters[k])
-
-    largest_text = (
-        f"Cluster {largest_cluster_id} ({clusters[largest_cluster_id]} forts)"
-    )
-    smallest_text = (
-        f"Cluster {smallest_cluster_id} ({clusters[smallest_cluster_id]} forts)"
-    )
-
-    # ---- Bar Chart ----
-    fig_bar = px.bar(
-        x=list(clusters.keys()),
-        y=list(clusters.values()),
-        labels={"x": "Cluster ID", "y": "Count"},
-        title="Forts Per Cluster",
-    )
-
-    # ---- Pie Chart ----
-    fig_pie = px.pie(
-        names=list(clusters.keys()),
-        values=list(clusters.values()),
-        title="Cluster Distribution",
-    )
-
-    # ---- Scatter: Elevation vs Cluster ----
-    fig_scatter_elev = px.scatter(
-        df,
-        x="cluster",
-        y="elevation_m",
-        color="cluster",
-        hover_data=["name", "district"],
-        title="Elevation by Cluster",
-    )
-
-    # ---- Scatter: Trek Time vs Cluster ----
-    fig_scatter_time = px.scatter(
-        df,
-        x="cluster",
-        y="trek_time_hours",
-        color="cluster",
-        hover_data=["name", "district"],
-        title="Trek Time by Cluster",
-    )
-
-    # ---- Cluster Profile Table ----
-    profile_rows = []
-    for cid in sorted(clusters.keys()):
-        subset = df[df["cluster"] == cid]
-
-        avg_elev = round(subset["elevation_m"].mean(), 1)
-        avg_time = round(subset["trek_time_hours"].mean(), 2)
-        avg_diff = round(subset["difficulty_num"].mean(), 2)
-
-        common_type = subset["type"].value_counts().idxmax()
-        common_district = subset["district"].value_counts().idxmax()
-
-        profile_rows.append(
-            html.Tr(
-                [
-                    html.Td(cid),
-                    html.Td(clusters[cid]),
-                    html.Td(avg_elev),
-                    html.Td(avg_time),
-                    html.Td(avg_diff),
-                    html.Td(common_type),
-                    html.Td(common_district),
-                ]
-            )
+    if len(clusters) == 0 and len(points) == 0:
+        # nothing to show
+        return (
+            "0",
+            "N/A",
+            "N/A",
+            empty_fig("No cluster counts available"),
+            empty_fig("No cluster counts available"),
+            empty_fig("No data"),
+            empty_fig("No data"),
+            html.Div("No cluster data available.", className="text-muted"),
         )
 
-    profile_table = dbc.Table(
-        [
-            html.Thead(
+    # Build DataFrame safely
+    df = pd.DataFrame(points)
+
+    # SAFELY get numeric columns with fallbacks
+    def safe_numeric(col_candidates):
+        """Return series coerced numeric from first existing candidate column name or None."""
+        for c in col_candidates:
+            if c in df.columns:
+                return pd.to_numeric(df[c], errors="coerce")
+        return None
+
+    # Common fallbacks
+    df["elevation_m"] = safe_numeric(
+        ["elevation_m", "elevation", "height", "height_m"]
+    ) or pd.Series([pd.NA] * len(df))
+    df["trek_time_hours"] = safe_numeric(
+        ["trek_time_hours", "trek_time", "time_hours", "trek_time_h"]
+    ) or pd.Series([pd.NA] * len(df))
+    df["difficulty_num"] = safe_numeric(
+        ["difficulty_num", "difficulty", "trek_difficulty", "difficulty_value"]
+    ) or pd.Series([pd.NA] * len(df))
+
+    # Ensure cluster column exists (could be str or int)
+    if "cluster" not in df.columns:
+        # try other names
+        if "cluster_id" in df.columns:
+            df["cluster"] = df["cluster_id"]
+        else:
+            # attempt to derive cluster from API clusters: if `points` empty or has no cluster, fallback to None
+            df["cluster"] = pd.Series([pd.NA] * len(df))
+
+    # Coerce cluster to int where possible
+    try:
+        df["cluster"] = pd.to_numeric(df["cluster"], errors="coerce").astype("Int64")
+    except Exception:
+        # keep as-is when cannot coerce
+        pass
+
+    # Use clusters dict if provided; otherwise derive from df
+    if len(clusters) == 0 and "cluster" in df.columns:
+        counts_series = df["cluster"].value_counts(dropna=True).sort_index()
+        clusters = {int(k): int(v) for k, v in counts_series.to_dict().items()}
+
+    # Summary numbers
+    total_clusters = len(clusters)
+
+    # Compute largest/smallest cluster texts safely
+    if clusters:
+        # cluster keys might be strings, keep stable ordering
+        try:
+            largest_cluster_id = max(clusters, key=lambda k: clusters[k])
+            smallest_cluster_id = min(clusters, key=lambda k: clusters[k])
+            largest_text = (
+                f"Cluster {largest_cluster_id} ({clusters[largest_cluster_id]} forts)"
+            )
+            smallest_text = (
+                f"Cluster {smallest_cluster_id} ({clusters[smallest_cluster_id]} forts)"
+            )
+        except Exception:
+            largest_text = "N/A"
+            smallest_text = "N/A"
+    else:
+        largest_text = "N/A"
+        smallest_text = "N/A"
+
+    # -------- Charts --------
+    # Bar & Pie based on clusters dict (if empty, fallback to df counts)
+    try:
+        bar_x = list(clusters.keys())
+        bar_y = list(clusters.values())
+        fig_bar = px.bar(
+            x=bar_x,
+            y=bar_y,
+            labels={"x": "Cluster ID", "y": "Count"},
+            title="Forts Per Cluster",
+        )
+        fig_pie = px.pie(names=bar_x, values=bar_y, title="Cluster Distribution")
+    except Exception:
+        fig_bar = empty_fig("No cluster distribution")
+        fig_pie = empty_fig("No cluster distribution")
+
+    # Scatter: elevation vs cluster
+    if (
+        "elevation_m" in df.columns
+        and df["elevation_m"].notna().sum() > 3
+        and "cluster" in df.columns
+        and df["cluster"].notna().sum() > 0
+    ):
+        try:
+            fig_scatter_elev = px.scatter(
+                df.dropna(subset=["elevation_m", "cluster"]),
+                x="cluster",
+                y="elevation_m",
+                color="cluster",
+                hover_data=["name", "district"],
+                title="Elevation by Cluster",
+            )
+        except Exception:
+            fig_scatter_elev = empty_fig("Elevation scatter not available")
+    else:
+        fig_scatter_elev = empty_fig("Insufficient elevation data")
+
+    # Scatter: trek time vs cluster
+    if (
+        "trek_time_hours" in df.columns
+        and df["trek_time_hours"].notna().sum() > 3
+        and "cluster" in df.columns
+        and df["cluster"].notna().sum() > 0
+    ):
+        try:
+            fig_scatter_time = px.scatter(
+                df.dropna(subset=["trek_time_hours", "cluster"]),
+                x="cluster",
+                y="trek_time_hours",
+                color="cluster",
+                hover_data=["name", "district"],
+                title="Trek Time by Cluster",
+            )
+        except Exception:
+            fig_scatter_time = empty_fig("Trek time scatter not available")
+    else:
+        fig_scatter_time = empty_fig("Insufficient trek time data")
+
+    # -------- Cluster Profile Table --------
+    if not df.empty and "cluster" in df.columns and df["cluster"].notna().any():
+        profile_rows = []
+        keys_sorted = sorted(
+            [k for k in clusters.keys()],
+            key=lambda x: int(x) if str(x).isdigit() else str(x),
+        )
+        for cid in keys_sorted:
+            # filter subset safely
+            subset = df[df["cluster"].astype(str) == str(cid)]
+            if subset.empty:
+                avg_elev = "N/A"
+                avg_time = "N/A"
+                avg_diff = "N/A"
+                common_type = "N/A"
+                common_district = "N/A"
+            else:
+                avg_elev = (
+                    round(subset["elevation_m"].dropna().mean(), 1)
+                    if subset["elevation_m"].notna().any()
+                    else "N/A"
+                )
+                avg_time = (
+                    round(subset["trek_time_hours"].dropna().mean(), 2)
+                    if subset["trek_time_hours"].notna().any()
+                    else "N/A"
+                )
+                avg_diff = (
+                    round(subset["difficulty_num"].dropna().mean(), 2)
+                    if subset["difficulty_num"].notna().any()
+                    else "N/A"
+                )
+                common_type = (
+                    subset["type"].mode().iloc[0]
+                    if "type" in subset.columns and not subset["type"].mode().empty
+                    else "N/A"
+                )
+                common_district = (
+                    subset["district"].mode().iloc[0]
+                    if "district" in subset.columns
+                    and not subset["district"].mode().empty
+                    else "N/A"
+                )
+
+            profile_rows.append(
                 html.Tr(
                     [
-                        html.Th("Cluster"),
-                        html.Th("Size"),
-                        html.Th("Avg Elevation"),
-                        html.Th("Avg Trek Time"),
-                        html.Th("Avg Difficulty"),
-                        html.Th("Most Common Type"),
-                        html.Th("Top District"),
+                        html.Td(str(cid)),
+                        html.Td(str(clusters.get(cid, 0))),
+                        html.Td(str(avg_elev)),
+                        html.Td(str(avg_time)),
+                        html.Td(str(avg_diff)),
+                        html.Td(str(common_type)),
+                        html.Td(str(common_district)),
                     ]
                 )
-            ),
-            html.Tbody(profile_rows),
-        ],
-        bordered=True,
-        striped=True,
-        hover=True,
-        className="mt-3",
-    )
+            )
+
+        profile_table = dbc.Table(
+            [
+                html.Thead(
+                    html.Tr(
+                        [
+                            html.Th("Cluster"),
+                            html.Th("Size"),
+                            html.Th("Avg Elevation"),
+                            html.Th("Avg Trek Time"),
+                            html.Th("Avg Difficulty"),
+                            html.Th("Most Common Type"),
+                            html.Th("Top District"),
+                        ]
+                    )
+                ),
+                html.Tbody(profile_rows),
+            ],
+            bordered=True,
+            striped=True,
+            hover=True,
+            className="mt-3",
+        )
+    else:
+        profile_table = html.Div(
+            "No cluster profile available.", className="text-muted"
+        )
 
     return (
-        total_clusters,
+        str(total_clusters),
         largest_text,
         smallest_text,
         fig_bar,
