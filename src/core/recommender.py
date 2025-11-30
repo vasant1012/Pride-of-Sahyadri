@@ -2,7 +2,7 @@ from geopy.distance import geodesic
 import pandas as pd
 
 
-def recommend_by_proximity(df: pd.DataFrame, lat: float, lon: float, k: int = 10) -> pd.DataFrame:
+def recommend_by_proximity(df: pd.DataFrame, lat: float, lon: float, k: int = 10) -> pd.DataFrame: # NOQA E501
     """Return k nearest forts to the given (lat, lon) location.
 
     Args:
@@ -28,7 +28,7 @@ def recommend_by_proximity(df: pd.DataFrame, lat: float, lon: float, k: int = 10
     return df_coords.sort_values('distance_km').head(k)
 
 
-def recommend_similar(df: pd.DataFrame, fort_id: int, k: int = 5) -> pd.DataFrame:
+def recommend_similar(df: pd.DataFrame, fort_id: int, k: int = 5) -> pd.DataFrame: # NOQA E501
     """Recommend similar forts to the given fort_id.
 
     Similarity heuristic:

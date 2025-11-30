@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 from src.core.cluster_engine import ClusterEngine
 
-router = APIRouter(prefix="/clusters", tags=["Clustering"])
+router = APIRouter()
 
 # Build clusters at startup
 cluster_engine = ClusterEngine()
 cluster_engine.build_clusters()
+
 
 @router.get("/")
 def get_cluster_counts():

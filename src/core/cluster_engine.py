@@ -21,6 +21,7 @@ class ClusterEngine:
     def load_data(self):
         df = pd.read_csv(CSV_PATH)
         df = df.copy()
+        df = df.fillna(value='Information Not Available')
 
         # Standardize latitude/longitude column names
         df["latitude"] = pd.to_numeric(
@@ -31,7 +32,8 @@ class ClusterEngine:
         )
 
         df["elevation_m"] = pd.to_numeric(df["elevation_m"], errors="coerce")
-        df["trek_time_hours"] = pd.to_numeric(df["trek_time_hours"], errors="coerce")
+        df["trek_time_hours"] = pd.to_numeric(
+            df["trek_time_hours"], errors="coerce")
 
         # Difficulty → numeric
         df["difficulty_num"] = df["trek_difficulty"].apply(self.map_difficulty)
@@ -40,8 +42,10 @@ class ClusterEngine:
         df["latitude"].fillna(df["latitude"].median(), inplace=True)
         df["longitude"].fillna(df["longitude"].median(), inplace=True)
         df["elevation_m"].fillna(df["elevation_m"].median(), inplace=True)
-        df["trek_time_hours"].fillna(df["trek_time_hours"].median(), inplace=True)
-        df["difficulty_num"].fillna(df["difficulty_num"].median(), inplace=True)
+        df["trek_time_hours"].fillna(
+            df["trek_time_hours"].median(), inplace=True)
+        df["difficulty_num"].fillna(
+            df["difficulty_num"].median(), inplace=True)
 
         self.df = df
         return df
@@ -70,7 +74,8 @@ class ClusterEngine:
             self.load_data()
 
         features = self.df[
-            ["latitude", "longitude", "elevation_m", "trek_time_hours", "difficulty_num"]
+            ["latitude", "longitude", "elevation_m",
+                "trek_time_hours", "difficulty_num"]
         ]
 
         # Scale features
@@ -105,4 +110,3 @@ class ClusterEngine:
         if self.cluster_counts is None:
             self.build_clusters()
         return self.cluster_counts
-

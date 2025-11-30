@@ -20,7 +20,7 @@ else:
 
 
 @router.get("/semantic_search")
-def semantic_search(q: str, top_k: int = 5):
+def semantic_search(q: str, top_k: int = 3):
     """Semantic search / mini-QA endpoint.
 
     Args:

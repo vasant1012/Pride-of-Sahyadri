@@ -39,6 +39,7 @@ def similar(fort_id: int, k: int = 5):
     results = recommend_similar(DF, fort_id, k=k)
 
     if results.empty:
-        raise HTTPException(status_code=404, detail="Fort not found or insufficient data for similarity.")
+        raise HTTPException(
+            status_code=404, detail="Fort not found or insufficient data for similarity.") # NOQA E501
 
     return results.to_dict(orient="records")

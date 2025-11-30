@@ -25,7 +25,7 @@ def load_filters(_):
 
     districts = sorted({f.get("district") or "Unknown" for f in forts})
     types = sorted({f.get("type") or "Unknown" for f in forts})
-    difficulties = sorted({f.get("trek_difficulty") or "Unknown" for f in forts})
+    difficulties = sorted({f.get("trek_difficulty") or "Unknown" for f in forts})  # NOQA E501
     seasons = sorted({f.get("best_season") or "Unknown" for f in forts})
 
     return (
@@ -238,7 +238,7 @@ def load_similar(fort_id):
     Input("main-tabs", "active_tab"),
 )
 def update_cluster_analysis(active_tab):
-    
+
     # Only run when insights tab active
     if active_tab != "tab-cluster":
         raise dash.exceptions.PreventUpdate
@@ -283,7 +283,7 @@ def update_cluster_analysis(active_tab):
 
     # SAFELY get numeric columns with fallbacks
     def safe_numeric(col_candidates):
-        """Return series coerced numeric from first existing candidate column name or None."""
+        """Return series coerced numeric from first existing candidate column name or None.""" # NOQA E501
         for c in col_candidates:
             if c in df.columns:
                 return pd.to_numeric(df[c], errors="coerce")
@@ -306,12 +306,14 @@ def update_cluster_analysis(active_tab):
         if "cluster_id" in df.columns:
             df["cluster"] = df["cluster_id"]
         else:
-            # attempt to derive cluster from API clusters: if `points` empty or has no cluster, fallback to None
+            # attempt to derive cluster from API clusters: if `points`
+            #  empty or has no cluster, fallback to None
             df["cluster"] = pd.Series([pd.NA] * len(df))
 
     # Coerce cluster to int where possible
     try:
-        df["cluster"] = pd.to_numeric(df["cluster"], errors="coerce").astype("Int64")
+        df["cluster"] = pd.to_numeric(
+            df["cluster"], errors="coerce").astype("Int64")
     except Exception:
         # keep as-is when cannot coerce
         pass
@@ -331,10 +333,10 @@ def update_cluster_analysis(active_tab):
             largest_cluster_id = max(clusters, key=lambda k: clusters[k])
             smallest_cluster_id = min(clusters, key=lambda k: clusters[k])
             largest_text = (
-                f"Cluster {largest_cluster_id} ({clusters[largest_cluster_id]} forts)"
+                f"Cluster {largest_cluster_id} ({clusters[largest_cluster_id]} forts)" # NOQA E501
             )
             smallest_text = (
-                f"Cluster {smallest_cluster_id} ({clusters[smallest_cluster_id]} forts)"
+                f"Cluster {smallest_cluster_id} ({clusters[smallest_cluster_id]} forts)" # NOQA E501
             )
         except Exception:
             largest_text = "N/A"
@@ -354,7 +356,8 @@ def update_cluster_analysis(active_tab):
             labels={"x": "Cluster ID", "y": "Count"},
             title="Forts Per Cluster",
         )
-        fig_pie = px.pie(names=bar_x, values=bar_y, title="Cluster Distribution")
+        fig_pie = px.pie(names=bar_x, values=bar_y,
+                         title="Cluster Distribution")
     except Exception:
         fig_bar = empty_fig("No cluster distribution")
         fig_pie = empty_fig("No cluster distribution")
@@ -402,7 +405,7 @@ def update_cluster_analysis(active_tab):
         fig_scatter_time = empty_fig("Insufficient trek time data")
 
     # -------- Cluster Profile Table --------
-    if not df.empty and "cluster" in df.columns and df["cluster"].notna().any():
+    if not df.empty and "cluster" in df.columns and df["cluster"].notna().any(): # NOQA E501
         profile_rows = []
         keys_sorted = sorted(
             [k for k in clusters.keys()],
@@ -435,7 +438,7 @@ def update_cluster_analysis(active_tab):
                 )
                 common_type = (
                     subset["type"].mode().iloc[0]
-                    if "type" in subset.columns and not subset["type"].mode().empty
+                    if "type" in subset.columns and not subset["type"].mode().empty # NOQA E501
                     else "N/A"
                 )
                 common_district = (
