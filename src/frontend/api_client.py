@@ -1,7 +1,7 @@
 import requests
 
-API_BASE = "http://localhost:8000"
-TIMEOUT = 8  # seconds
+API_BASE = "http://localhost:8030"
+TIMEOUT = 120  # seconds
 
 
 class APIClient:
@@ -56,7 +56,7 @@ class APIClient:
 
     def rag_query(self, query: str):
         return self._get(
-            "/search/qa",
+            "/search/semantic_search",
             params={"q": query},
             expect_list=True,
         )

@@ -82,6 +82,7 @@ class RAGEngine:
 
         # Return raw dataframe rows (no formatting)
         return [self.df.iloc[i].to_dict() for i in top_idx]
+    
 
     # -------------------------------------------------------
     # Extra: force rebuild (if needed)
