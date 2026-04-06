@@ -1,5 +1,4 @@
 import os
-import json
 import torch
 from sentence_transformers import SentenceTransformer, util
 
@@ -7,39 +6,56 @@ from sentence_transformers import SentenceTransformer, util
 class RAGEngine:
     def __init__(self, cache_dir="rag_cache"):
         self.df = None
-        self.corpus = []
-        self.embeddings = None
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
         self.cache_dir = cache_dir
 
         # Create directory if missing
         os.makedirs(self.cache_dir, exist_ok=True)
 
         # Cache file paths
-        self.corpus_file = os.path.join(cache_dir, "corpus.json")
+        self.corpus_file = os.path.join(cache_dir, "corpus.txt")
         self.emb_file = os.path.join(cache_dir, "embeddings.pt")
+
+        self.corpus = ''
+        self.embeddings = None
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+
+    def fort_dict_to_paragraph(self, data: dict) -> str:
+        return (
+            f"{data['name']} is a {data['type']} located in "
+            f"{data['taluka']}, {data['district']} district. It was built by "
+            f"{data['built_by']} during the {data['era']} around {data['year_of_construction']}. "  # NOQA E501
+            f"The fort stands at an elevation of about {data['elevation_m']} meters above sea level "  # NOQA E501
+            f"and is currently in a {data['current_condition']} condition. "
+            f"Historically, it served as {data['key_events']}. "
+            f"The base village for the fort is {data['base_village']}, situated at latitude "  # NOQA E501
+            f"{data['latitude']} and longitude {data['longitude']}. "
+            f"The trek to the fort is considered {data['trek_difficulty']} and generally takes "  # NOQA E501
+            f"around {data['trek_time_hours']} hour(s). The best season to visit the fort is during "  # NOQA E501
+            f"{data['best_season']}. Water availability at the fort includes {data['water_availability']}, "  # NOQA E501
+            f"and accommodation options are available in {data['accommodation']}. "  # NOQA E501
+            f"Additional facts: {data['notes']}"
+        )
 
     # -------------------------------------------------------
     # 1. LOAD DATA
     # -------------------------------------------------------
     def build_corpus(self, df):
-        self.df = df
-        self.corpus = []
+        if os.path.exists(self.corpus_file):
+            print(f"The file '{self.corpus_file}' does not exist.")
+            with open(self.corpus_file, 'r') as file:
+                self.corpus = file.read()
+        else:
+            print(f"The file '{self.corpus_file}' does not exist.")
+            self.corpus_list = []
 
-        text_columns = [
-            "name", "district", "type", "built_by", "era",
-            "key_events", "notes", "water_availability",
-            "trek_difficulty", "description"
-        ]
+            for _, row in df.iterrows():
+                self.corpus_list.append(self.fort_dict_to_paragraph(row))
 
-        for _, row in df.iterrows():
-            parts = [str(row.get(col, "")) for col in text_columns]
-            combined = " | ".join(parts)
-            self.corpus.append(combined)
+            self.corpus = "\n".join(line.strip() for line in self.corpus_list)
 
-        # Save corpus locally for future reuse
-        with open(self.corpus_file, "w") as f:
-            json.dump(self.corpus, f)
+            # Save corpus locally for future reuse
+            with open(self.corpus_file, 'w') as file_object:
+                file_object.write(self.corpus)
 
         print(f"RAGEngine: Corpus created with {len(self.corpus)} entries.")
         return self
