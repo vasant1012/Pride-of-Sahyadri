@@ -1,7 +1,7 @@
 import requests
 
 API_BASE = "http://localhost:8030"
-TIMEOUT = 480  # seconds
+TIMEOUT = 600  # seconds
 
 
 class APIClient:

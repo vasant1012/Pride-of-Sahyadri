@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash import Input, Output
 import pandas as pd
@@ -7,20 +7,18 @@ import plotly.express as px
 
 from src.frontend.api_client import api
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.MINTY])
 
-app.layout = dbc.Container([
-    html.H2("Cluster Analysis Dashboard"),
+app.title = "Pride of Sahyadri"
 
-    html.Button("Load Clusters", id="load-btn",
-                className="btn btn-primary mt-3"),
-    html.Div(id="cluster-stats", className="mt-4"),
-
-    dcc.Graph(id="cluster-bar"),
-    dcc.Graph(id="cluster-pie"),
-    dcc.Graph(id="cluster-scatter"),
-
-], fluid=True)
+app.layout = dbc.Container(
+    [html.Br(),
+        html.H2("🏰 Pride of Sahyadri",
+                # className="text-white mb-0",
+                style={'textAlign': 'center'}),
+     html.Br(),
+     ], style={'backgroundColor': '#47DA74'}, fluid=True
+)
 
 
 @app.callback(

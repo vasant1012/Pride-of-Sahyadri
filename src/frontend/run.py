@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/home/pamya/Python/ML_Projects/Pride-of-Sahyadri")
+sys.path.append("/home/vasant/projects/Pride-of-Sahyadri/")
 from src.frontend.app import app  # noqa: E402 (import after path setup)
 
 

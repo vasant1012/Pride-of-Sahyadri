@@ -224,26 +224,8 @@ def load_similar(fort_id):
 # 7. Insight Callback
 # =========================================================
 @app.dash.callback(
-    Output("insight-fort-dropdown", "options"),
-    Input("tabs", "value"),
-    Input("search-input", "value")  # Add this
-)
-def load_forts_for_insight(tab, search_query):
-    if tab != "insight-tab":
-        raise dash.exceptions.PreventUpdate
-
-    forts = api.get_forts()
-
-    # Filter by search query if provided
-    if search_query:
-        forts = [f for f in forts if search_query.lower() in f["name"].lower()]
-
-    return [{"label": f["name"], "value": f["fort_id"]} for f in forts]
-
-
-@app.dash.callback(
-    Output("insight-content", "children"),
-    Input("insight-fort-dropdown", "value"),
+    Output("insight-output", "children"),
+    Input("selected-fort-id", "data"),
 )
 def load_insight(fort_id):
     if not fort_id:
@@ -365,22 +347,16 @@ def qa_callback(n, query):
 
     answers = api.rag_query(query)
     if not answers:
-        return "No results found."
+        answers = "No results found."
 
-    cards = []
-    for a in answers:
-        cards.append(
-            dbc.Card(
-                dbc.CardBody(
-                    [
-                        html.H5(a.get("name", "-"), className="fw-bold"),
-                        html.P(a.get("notes", "No notes available")),
-                    ]
-                ),
-                className="mb-3",
-            )
-        )
-    return cards
+    return dbc.Card(
+        dbc.CardBody(
+            [
+                html.P(answers),
+            ]
+        ),
+        className="mb-3",
+    )
 
 
 # ==================================================
@@ -393,6 +369,8 @@ def qa_callback(n, query):
     Output("filter-difficulty", "value"),
     Output("filter-season", "value"),
     Input("reset-btn", "n_clicks"),
+
+
 )
 def reset_filters(n):
     if not n:

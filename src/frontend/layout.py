@@ -3,14 +3,13 @@ import dash_bootstrap_components as dbc
 
 
 def create_header():
-    return dbc.Navbar(
-        dbc.Container(
-            [
-                html.H2("🏰 Pride of Sahyadri", className="text-white mb-0"),
-            ]
-        ),
-        color="dark",
-        className="mb-4",
+    return dbc.Container(
+        [
+            html.Br(),
+            html.H2("🏰 Pride of Sahyadri", className="text-white mb-0",
+                    style={'textAlign': 'center'}),
+            html.Br(),
+        ], style={'backgroundColor': '#554124'}, fluid=True
     )
 
 
@@ -30,11 +29,13 @@ def create_sidebar():
             html.Label("District"),
             dcc.Dropdown(
                 id="filter-district", placeholder="Select district", className="mb-2"  # NOQA E501
+                , style={"color": "#FFFFFF", "backgroundColor": "#3C2515"}
             ),
             # Type Filter
             html.Label("Fort Type"),
             dcc.Dropdown(
                 id="filter-type", placeholder="Select fort type", className="mb-2"  # NOQA E501
+                , style={"color": "#FFFFFF", "backgroundColor": "#3C2515"}
             ),
             # Difficulty Filter
             html.Label("Trek Difficulty"),
@@ -42,22 +43,28 @@ def create_sidebar():
                 id="filter-difficulty",
                 placeholder="Select difficulty",
                 className="mb-2",
+                style={"color": "#FFFFFF", "backgroundColor": "#3C2515"}
             ),
             # Season Filter
             html.Label("Best Season"),
             dcc.Dropdown(
                 id="filter-season", placeholder="Select season", className="mb-4"  # NOQA E501
+                , style={"color": "#FFFFFF", "backgroundColor": "#3C2515"}
             ),
             # Reset Button
             dbc.Button(
                 "Reset Filters",
                 id="reset-btn",
-                color="secondary",
-                className="w-100 mb-3",
+                style={"color": "#FFFFFF", "backgroundColor": "#3C2515"}
             ),
         ],
         body=True,
-        style={"height": "100vh", "overflowY": "auto"},
+        style={
+            "color": "#FFFFFF",
+            "backgroundColor": "#23904F",
+            "height": "100vh",
+            "overflowY": "auto",
+        },
     )
 
 
@@ -74,9 +81,9 @@ def create_tabs():
                 tab_id="tab-explore",
                 children=[
                     html.Br(),
-                    html.H4("Explore Forts", className="text-center"),
+                    html.H4("Explore Forts", className="text-center"),  # NOQA E501
                     html.Div(id="fort-list", className="mt-3"),
-                ],
+                ], style={"color": "#3C2515"}
             ),
             # ======================================================
             # Recommendations Tab
@@ -86,7 +93,7 @@ def create_tabs():
                 tab_id="tab-recommend",
                 children=[
                     html.Br(),
-                    html.H4("Recommended Forts", className="text-center"),
+                    html.H4("Recommended Forts", className="text-center"),  # NOQA E501
                     html.Div(
                         [
                             html.Label("Selected Fort:"),
@@ -101,7 +108,7 @@ def create_tabs():
                              className="text-muted mb-4"),
                     html.H5("Similar Forts"),
                     html.Div(id="similar-container", className="text-muted"),
-                ],
+                ], style={"color": "#3C2515"}
             ),
             # ================================
             # Insights Tab
@@ -111,18 +118,9 @@ def create_tabs():
                 tab_id="tab-insights",
                 children=[
                     html.Br(),
-                    html.H3("Fort Insights", className="text-center mb-4"),
-
+                    html.H3("Fort Insights", className="text-center mb-4"),  # NOQA E501
                     dbc.Container(
                         [
-
-                            # -------- Fort Selector --------
-                            html.Label("Select Fort"),
-                            dcc.Dropdown(
-                                id="insight-fort-dropdown",
-                                placeholder="Select a fort to view insights",
-                                className="mb-4",
-                            ),
 
                             # -------- Insight Output --------
                             html.Div(
@@ -133,7 +131,7 @@ def create_tabs():
                         ],
                         fluid=True,
                     ),
-                ],
+                ], style={"color": "#3C2515"}
             ),
             # ======================================================
             # Q&A Tab
@@ -155,9 +153,10 @@ def create_tabs():
                     ),
                     dbc.Button(
                         "Search", id="qa-btn", color="primary", className="mb-3"  # NOQA E501
+                        , style={"color": "#FFFFFF", "backgroundColor": "#3C2515"} # NOQA E501
                     ),
                     html.Div(id="qa-output", className="text-muted"),
-                ],
+                ], style={"color": "#3C2515"}
             ),
         ],
     )
@@ -176,5 +175,5 @@ def create_layout():
                     dbc.Col(create_tabs(), width=9),
                 ]
             ),
-        ],
+        ],  style={"backgroundColor": "#47DA74"}
     )
