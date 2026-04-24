@@ -177,10 +177,6 @@ The frontend never directly imports backend modules — it communicates purely o
 
 ---
 
-### 🌐 6. **Samples from User Interface**
-
-
-
 ## 📁 Project Structure
 
 ```
