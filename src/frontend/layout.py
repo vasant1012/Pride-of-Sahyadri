@@ -29,12 +29,12 @@ def create_sidebar():
             # District Filter
             html.Label("District"),
             dcc.Dropdown(
-                id="filter-district", placeholder="Select district", className="mb-2"
+                id="filter-district", placeholder="Select district", className="mb-2"  # NOQA E501
             ),
             # Type Filter
             html.Label("Fort Type"),
             dcc.Dropdown(
-                id="filter-type", placeholder="Select fort type", className="mb-2"
+                id="filter-type", placeholder="Select fort type", className="mb-2"  # NOQA E501
             ),
             # Difficulty Filter
             html.Label("Trek Difficulty"),
@@ -46,7 +46,7 @@ def create_sidebar():
             # Season Filter
             html.Label("Best Season"),
             dcc.Dropdown(
-                id="filter-season", placeholder="Select season", className="mb-4"
+                id="filter-season", placeholder="Select season", className="mb-4"  # NOQA E501
             ),
             # Reset Button
             dbc.Button(
@@ -97,54 +97,42 @@ def create_tabs():
                         ]
                     ),
                     html.H5("Nearby Forts"),
-                    html.Div(id="nearby-container", className="text-muted mb-4"),
+                    html.Div(id="nearby-container",
+                             className="text-muted mb-4"),
                     html.H5("Similar Forts"),
                     html.Div(id="similar-container", className="text-muted"),
                 ],
             ),
             # ================================
-            # Cluster Analysis Tab
+            # Insights Tab
             # ================================
             dbc.Tab(
-                label="Cluster Analysis",
-                tab_id="tab-cluster",
+                label="Insights",
+                tab_id="tab-insights",
                 children=[
                     html.Br(),
-                    html.H3("ML Cluster Analysis", className="text-center mb-4"),
+                    html.H3("Fort Insights", className="text-center mb-4"),
 
-                    # -------- Summary Cards --------
-                    dbc.Row([
-                        dbc.Col(dbc.Card(dbc.CardBody([
-                            html.H6("Total Clusters"),
-                            html.H3(id="ca-total-clusters")
-                        ])), width=3),
+                    dbc.Container(
+                        [
 
-                        dbc.Col(dbc.Card(dbc.CardBody([
-                            html.H6("Largest Cluster"),
-                            html.H4(id="ca-largest-cluster")
-                        ])), width=4),
+                            # -------- Fort Selector --------
+                            html.Label("Select Fort"),
+                            dcc.Dropdown(
+                                id="insight-fort-dropdown",
+                                placeholder="Select a fort to view insights",
+                                className="mb-4",
+                            ),
 
-                        dbc.Col(dbc.Card(dbc.CardBody([
-                            html.H6("Smallest Cluster"),
-                            html.H4(id="ca-smallest-cluster")
-                        ])), width=4),
-                    ], className="mb-4"),
+                            # -------- Insight Output --------
+                            html.Div(
+                                id="insight-output",
+                                className="mt-3"
+                            ),
 
-                    # -------- Charts Row 1 --------
-                    dbc.Row([
-                        dbc.Col(dcc.Graph(id="ca-bar"), width=6),
-                        dbc.Col(dcc.Graph(id="ca-pie"), width=6),
-                    ], className="mb-4"),
-
-                    # -------- Charts Row 2 --------
-                    dbc.Row([
-                        dbc.Col(dcc.Graph(id="ca-scatter-elev"), width=6),
-                        dbc.Col(dcc.Graph(id="ca-scatter-time"), width=6),
-                    ], className="mb-4"),
-
-                    # -------- Cluster Profile Table --------
-                    html.H4("Cluster Profile Summary", className="mt-4"),
-                    html.Div(id="ca-cluster-profile"),
+                        ],
+                        fluid=True,
+                    ),
                 ],
             ),
             # ======================================================
@@ -166,7 +154,7 @@ def create_tabs():
                         className="mb-3",
                     ),
                     dbc.Button(
-                        "Search", id="qa-btn", color="primary", className="mb-3"
+                        "Search", id="qa-btn", color="primary", className="mb-3"  # NOQA E501
                     ),
                     html.Div(id="qa-output", className="text-muted"),
                 ],

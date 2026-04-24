@@ -11,7 +11,7 @@ def init_routes(app: FastAPI):
     app.include_router(forts.router, prefix="/forts", tags=["forts"])
     app.include_router(search.router, prefix="/search", tags=["search"])
     app.include_router(clustering.router,
-                       prefix="/clusters", tags=["clustering"])
+                       prefix="/forts/{id}", tags=["clustering"])
     app.include_router(
         recommend.router, prefix="/recommend", tags=["recommend"])
 

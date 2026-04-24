@@ -23,7 +23,8 @@ app.layout = dbc.Container(
         ),
         html.Div(id="insight-output", className="mt-4"),
     ],
-    fluid=True, style={"backgroundColor": "#ddffee"}
+    fluid=True,
+    style={"backgroundColor": "#ddffee"},
 )
 
 
@@ -36,7 +37,7 @@ def load_insights(n):
         raise dash.exceptions.PreventUpdate
 
     if not fort:
-        return html.Div("Unable to load fort details.", className="text-danger")
+        return html.Div("Unable to load fort details.", className="text-danger") # NOQA E501
 
     name = fort.get("name", "Unknown Fort")
     fort_type = fort.get("type", "Unknown Type")
@@ -56,11 +57,13 @@ def load_insights(n):
             dbc.Card(
                 dbc.CardBody(
                     [
-                        html.H2(name, className="fw-bold", style={"color": "#143f29"}),
+                        html.H2(name, className="fw-bold",
+                                style={"color": "#143f29"}),
                         html.P(notes, className="text-muted mt-2"),
-                        dbc.Badge(fort_type, color="primary", className="me-2"),
+                        dbc.Badge(fort_type, color="primary",
+                                  className="me-2"),
                         dbc.Badge(
-                            f"Elevation: {elevation} m", color="info", className="me-2"
+                            f"Elevation: {elevation} m", color="info", className="me-2" # NOQA E501
                         ),
                         dbc.Badge(
                             f"Difficulty: {trek_difficulty}",
@@ -81,12 +84,15 @@ def load_insights(n):
                         dbc.Card(
                             dbc.CardBody(
                                 [
-                                    html.H5("Trek Duration", style={"color": "#143f29"}),
+                                    html.H5(
+                                        "Trek Duration", style={"color": "#143f29"} # NOQA E501
+                                    ),
                                     html.H4(f"{trek_time_hours} hrs"),
                                 ]
                             ),
                             className="shadow-sm mb-3",
-                            style={"textAlign": "center", "backgroundColor": "#82edb8"},
+                            style={"textAlign": "center",
+                                   "backgroundColor": "#82edb8"},
                         ),
                         width=6,
                     ),
@@ -94,12 +100,14 @@ def load_insights(n):
                         dbc.Card(
                             dbc.CardBody(
                                 [
-                                    html.H5("Best Season", style={"color": "#143f29"}),
+                                    html.H5("Best Season", style={
+                                            "color": "#143f29"}),
                                     html.H4(best_season),
                                 ]
                             ),
                             className="shadow-sm mb-3",
-                            style={"textAlign": "center", "backgroundColor": "#82edb8"},
+                            style={"textAlign": "center",
+                                   "backgroundColor": "#82edb8"},
                         ),
                         width=6,
                     ),
@@ -110,7 +118,8 @@ def load_insights(n):
                 dbc.Card(
                     dbc.CardBody(
                         [
-                            html.H4("Accommodation", style={"color": "#143f29"}),
+                            html.H4("Accommodation", style={
+                                    "color": "#143f29"}),
                             html.P(accommodation),
                         ]
                     ),
@@ -122,8 +131,8 @@ def load_insights(n):
                 ),
                 className="shadow-sm mb-4",
                 style={
-                        "padding": "15px",
-                    }
+                    "padding": "15px",
+                },
             ),
             dbc.Row(
                 dbc.Card(
@@ -142,8 +151,8 @@ def load_insights(n):
                 ),
                 className="shadow-sm mb-4",
                 style={
-                        "padding": "15px",
-                    }
+                    "padding": "15px",
+                },
             ),
         ],
         className="p-3",

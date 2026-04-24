@@ -1,8 +1,6 @@
 import json
 from dash import html, Input, Output, State, ALL, callback_context
 import dash
-import pandas as pd
-import plotly.express as px
 import dash_bootstrap_components as dbc
 from src.frontend import app
 from src.frontend.api_client import api
@@ -223,281 +221,130 @@ def load_similar(fort_id):
 
 
 # =========================================================
-# 7. Cluster Analysis Callback
+# 7. Insight Callback
 # =========================================================
-# Robust Cluster Analysis callback (drop-in replacement)
 @app.dash.callback(
-    Output("ca-total-clusters", "children"),
-    Output("ca-largest-cluster", "children"),
-    Output("ca-smallest-cluster", "children"),
-    Output("ca-bar", "figure"),
-    Output("ca-pie", "figure"),
-    Output("ca-scatter-elev", "figure"),
-    Output("ca-scatter-time", "figure"),
-    Output("ca-cluster-profile", "children"),
-    Input("main-tabs", "active_tab"),
+    Output("insight-fort-dropdown", "options"),
+    Input("tabs", "value"),
+    Input("search-input", "value")  # Add this
 )
-def update_cluster_analysis(active_tab):
-
-    # Only run when insights tab active
-    if active_tab != "tab-cluster":
+def load_forts_for_insight(tab, search_query):
+    if tab != "insight-tab":
         raise dash.exceptions.PreventUpdate
 
-    # Fetch cluster counts and clustered forts
-    clusters = api.get_clusters() or {}
-    points = api.get_clustered_forts() or []
+    forts = api.get_forts()
 
-    # Defensive: ensure clusters is dict-like
-    if not isinstance(clusters, dict):
-        try:
-            clusters = dict(clusters)
-        except Exception:
-            clusters = {}
+    # Filter by search query if provided
+    if search_query:
+        forts = [f for f in forts if search_query.lower() in f["name"].lower()]
 
-    # Placeholder empty figure
-    def empty_fig(title="No data"):
-        import plotly.graph_objects as go
+    return [{"label": f["name"], "value": f["fort_id"]} for f in forts]
 
-        fig = go.Figure()
-        fig.add_annotation(text=title, x=0.5, y=0.5, showarrow=False)
-        fig.update_layout(
-            xaxis={"visible": False}, yaxis={"visible": False}, title=title
-        )
-        return fig
 
-    if len(clusters) == 0 and len(points) == 0:
-        # nothing to show
-        return (
-            "0",
-            "N/A",
-            "N/A",
-            empty_fig("No cluster counts available"),
-            empty_fig("No cluster counts available"),
-            empty_fig("No data"),
-            empty_fig("No data"),
-            html.Div("No cluster data available.", className="text-muted"),
-        )
+@app.dash.callback(
+    Output("insight-content", "children"),
+    Input("insight-fort-dropdown", "value"),
+)
+def load_insight(fort_id):
+    if not fort_id:
+        return html.Div("Select a fort to view insights.", className="text-muted")  # NOQA E501
 
-    # Build DataFrame safely
-    df = pd.DataFrame(points)
+    fort = api.get_fort(fort_id)
 
-    # SAFELY get numeric columns with fallbacks
-    def safe_numeric(col_candidates):
-        """Return series coerced numeric from first existing candidate column name or None.""" # NOQA E501
-        for c in col_candidates:
-            if c in df.columns:
-                return pd.to_numeric(df[c], errors="coerce")
-        return None
+    if not fort:
+        return html.Div("Fort not found.", className="text-danger")
 
-    # Common fallbacks
-    df["elevation_m"] = safe_numeric(
-        ["elevation_m", "elevation", "height", "height_m"]
-    ) or pd.Series([pd.NA] * len(df))
-    df["trek_time_hours"] = safe_numeric(
-        ["trek_time_hours", "trek_time", "time_hours", "trek_time_h"]
-    ) or pd.Series([pd.NA] * len(df))
-    df["difficulty_num"] = safe_numeric(
-        ["difficulty_num", "difficulty", "trek_difficulty", "difficulty_value"]
-    ) or pd.Series([pd.NA] * len(df))
+    # Extract fields
+    name = fort.get("name", "Unknown Fort")
+    description = fort.get("description", "No description available.")
+    fort_type = fort.get("type", "Unknown Type")
+    elevation = fort.get("elevation_m", "N/A")
+    key_events = fort.get("key_events", "N/A")
+    trek_difficulty = fort.get("trek_difficulty", "N/A")
+    trek_time_hours = fort.get("trek_time_hours", "N/A")
+    best_season = fort.get("best_season", "N/A")
+    accommodation = fort.get("accommodation", "N/A")
+    notes = fort.get("notes", "N/A")
 
-    # Ensure cluster column exists (could be str or int)
-    if "cluster" not in df.columns:
-        # try other names
-        if "cluster_id" in df.columns:
-            df["cluster"] = df["cluster_id"]
-        else:
-            # attempt to derive cluster from API clusters: if `points`
-            #  empty or has no cluster, fallback to None
-            df["cluster"] = pd.Series([pd.NA] * len(df))
-
-    # Coerce cluster to int where possible
-    try:
-        df["cluster"] = pd.to_numeric(
-            df["cluster"], errors="coerce").astype("Int64")
-    except Exception:
-        # keep as-is when cannot coerce
-        pass
-
-    # Use clusters dict if provided; otherwise derive from df
-    if len(clusters) == 0 and "cluster" in df.columns:
-        counts_series = df["cluster"].value_counts(dropna=True).sort_index()
-        clusters = {int(k): int(v) for k, v in counts_series.to_dict().items()}
-
-    # Summary numbers
-    total_clusters = len(clusters)
-
-    # Compute largest/smallest cluster texts safely
-    if clusters:
-        # cluster keys might be strings, keep stable ordering
-        try:
-            largest_cluster_id = max(clusters, key=lambda k: clusters[k])
-            smallest_cluster_id = min(clusters, key=lambda k: clusters[k])
-            largest_text = (
-                f"Cluster {largest_cluster_id} ({clusters[largest_cluster_id]} forts)" # NOQA E501
-            )
-            smallest_text = (
-                f"Cluster {smallest_cluster_id} ({clusters[smallest_cluster_id]} forts)" # NOQA E501
-            )
-        except Exception:
-            largest_text = "N/A"
-            smallest_text = "N/A"
-    else:
-        largest_text = "N/A"
-        smallest_text = "N/A"
-
-    # -------- Charts --------
-    # Bar & Pie based on clusters dict (if empty, fallback to df counts)
-    try:
-        bar_x = list(clusters.keys())
-        bar_y = list(clusters.values())
-        fig_bar = px.bar(
-            x=bar_x,
-            y=bar_y,
-            labels={"x": "Cluster ID", "y": "Count"},
-            title="Forts Per Cluster",
-        )
-        fig_pie = px.pie(names=bar_x, values=bar_y,
-                         title="Cluster Distribution")
-    except Exception:
-        fig_bar = empty_fig("No cluster distribution")
-        fig_pie = empty_fig("No cluster distribution")
-
-    # Scatter: elevation vs cluster
-    if (
-        "elevation_m" in df.columns
-        and df["elevation_m"].notna().sum() > 3
-        and "cluster" in df.columns
-        and df["cluster"].notna().sum() > 0
-    ):
-        try:
-            fig_scatter_elev = px.scatter(
-                df.dropna(subset=["elevation_m", "cluster"]),
-                x="cluster",
-                y="elevation_m",
-                color="cluster",
-                hover_data=["name", "district"],
-                title="Elevation by Cluster",
-            )
-        except Exception:
-            fig_scatter_elev = empty_fig("Elevation scatter not available")
-    else:
-        fig_scatter_elev = empty_fig("Insufficient elevation data")
-
-    # Scatter: trek time vs cluster
-    if (
-        "trek_time_hours" in df.columns
-        and df["trek_time_hours"].notna().sum() > 3
-        and "cluster" in df.columns
-        and df["cluster"].notna().sum() > 0
-    ):
-        try:
-            fig_scatter_time = px.scatter(
-                df.dropna(subset=["trek_time_hours", "cluster"]),
-                x="cluster",
-                y="trek_time_hours",
-                color="cluster",
-                hover_data=["name", "district"],
-                title="Trek Time by Cluster",
-            )
-        except Exception:
-            fig_scatter_time = empty_fig("Trek time scatter not available")
-    else:
-        fig_scatter_time = empty_fig("Insufficient trek time data")
-
-    # -------- Cluster Profile Table --------
-    if not df.empty and "cluster" in df.columns and df["cluster"].notna().any(): # NOQA E501
-        profile_rows = []
-        keys_sorted = sorted(
-            [k for k in clusters.keys()],
-            key=lambda x: int(x) if str(x).isdigit() else str(x),
-        )
-        for cid in keys_sorted:
-            # filter subset safely
-            subset = df[df["cluster"].astype(str) == str(cid)]
-            if subset.empty:
-                avg_elev = "N/A"
-                avg_time = "N/A"
-                avg_diff = "N/A"
-                common_type = "N/A"
-                common_district = "N/A"
-            else:
-                avg_elev = (
-                    round(subset["elevation_m"].dropna().mean(), 1)
-                    if subset["elevation_m"].notna().any()
-                    else "N/A"
-                )
-                avg_time = (
-                    round(subset["trek_time_hours"].dropna().mean(), 2)
-                    if subset["trek_time_hours"].notna().any()
-                    else "N/A"
-                )
-                avg_diff = (
-                    round(subset["difficulty_num"].dropna().mean(), 2)
-                    if subset["difficulty_num"].notna().any()
-                    else "N/A"
-                )
-                common_type = (
-                    subset["type"].mode().iloc[0]
-                    if "type" in subset.columns and not subset["type"].mode().empty # NOQA E501
-                    else "N/A"
-                )
-                common_district = (
-                    subset["district"].mode().iloc[0]
-                    if "district" in subset.columns
-                    and not subset["district"].mode().empty
-                    else "N/A"
-                )
-
-            profile_rows.append(
-                html.Tr(
-                    [
-                        html.Td(str(cid)),
-                        html.Td(str(clusters.get(cid, 0))),
-                        html.Td(str(avg_elev)),
-                        html.Td(str(avg_time)),
-                        html.Td(str(avg_diff)),
-                        html.Td(str(common_type)),
-                        html.Td(str(common_district)),
-                    ]
-                )
-            )
-
-        profile_table = dbc.Table(
-            [
-                html.Thead(
-                    html.Tr(
+    return html.Div(
+        [
+            # HERO
+            dbc.Card(
+                [
+                    dbc.CardBody(
                         [
-                            html.Th("Cluster"),
-                            html.Th("Size"),
-                            html.Th("Avg Elevation"),
-                            html.Th("Avg Trek Time"),
-                            html.Th("Avg Difficulty"),
-                            html.Th("Most Common Type"),
-                            html.Th("Top District"),
+                            html.H3(name, className="fw-bold"),
+                            html.P(description, className="text-muted"),
+                            dbc.Badge(fort_type, color="primary",
+                                      className="me-2"),
+                            dbc.Badge(
+                                f"⛰ Elevation: {elevation} m",
+                                color="info",
+                                className="me-2",
+                            ),
+                            dbc.Badge(
+                                f"⚠ Difficulty: {trek_difficulty}", color="warning"  # NOQA E501
+                            ),
                         ]
                     )
-                ),
-                html.Tbody(profile_rows),
-            ],
-            bordered=True,
-            striped=True,
-            hover=True,
-            className="mt-3",
-        )
-    else:
-        profile_table = html.Div(
-            "No cluster profile available.", className="text-muted"
-        )
-
-    return (
-        str(total_clusters),
-        largest_text,
-        smallest_text,
-        fig_bar,
-        fig_pie,
-        fig_scatter_elev,
-        fig_scatter_time,
-        profile_table,
+                ],
+                className="mb-4 shadow-sm",
+            ),
+            # METRICS
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H6("🕒 Trek Time"),
+                                    html.H4(f"{trek_time_hours} hrs"),
+                                ]
+                            )
+                        ),
+                        width=3,
+                    ),
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [html.H6("🌦 Best Season"),
+                                 html.H4(best_season)]
+                            )
+                        ),
+                        width=3,
+                    ),
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [html.H6("🏨 Accommodation"),
+                                 html.H5(accommodation)]
+                            )
+                        ),
+                        width=3,
+                    ),
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [html.H6("🔑 Key Events"), html.P(key_events)])
+                        ),
+                        width=3,
+                    ),
+                ]
+            ),
+            # NOTES
+            dbc.Card(
+                [
+                    dbc.CardBody(
+                        [
+                            html.H5("Notes"),
+                            html.Hr(),
+                            html.P(notes, style={"whiteSpace": "pre-wrap"}),
+                        ]
+                    )
+                ],
+                className="mt-4 shadow-sm",
+            ),
+        ]
     )
 
 
