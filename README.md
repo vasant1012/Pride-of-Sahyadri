@@ -288,9 +288,15 @@ pytest tests/
 
 ## 🖼️ UI Screenshots
 
-| Explore Tab | Recommendations Tab | Q&A Tab |
-|---|---|---|
-| ![Explore](UI_1_insights.png) | ![Recommend](UI_2_Recommendation.png) | ![RAG](UI_3_rag.png) |
+### 1. Insights Tab
+<img width="923" height="503" alt="UI_1_insights" src="https://github.com/user-attachments/assets/bb3d8ae2-8210-4e32-a8a1-6bbb0a17762c" />
+
+### 2. Recommendations Tab
+<img width="928" height="505" alt="UI_2_Recommendation" src="https://github.com/user-attachments/assets/f807027d-bd72-4cf6-911f-8f4c958f8437" />
+
+
+### 3. Q&A Tab 
+<img width="927" height="502" alt="UI_3_rag" src="https://github.com/user-attachments/assets/36f973c6-241d-4470-a3cf-6d133033e292" />
 
 ---
 
