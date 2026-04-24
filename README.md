@@ -98,24 +98,7 @@ Two recommendation strategies powered by `src/core/recommender.py`:
 
 ---
 
-### 🗺️ 4. **Geospatial Clustering**
-
-K-Means clustering across:
-- Latitude & Longitude
-- Elevation
-- Trek Difficulty (encoded numerically)
-
-Implemented in `src/core/cluster_engine.py` — provides geographic grouping of forts visible through the API and frontend.
-
-| Endpoint | Description |
-|---|---|
-| `GET /clusters` | Returns `{cluster_id: count}` |
-| `GET /clusters/data` | Returns all forts with cluster labels |
-| `POST /clusters/rebuild/{n}` | Rebuild with new cluster count |
-
----
-
-### 📡 5. **FastAPI Backend**
+### 📡 4. **FastAPI Backend**
 
 A decoupled REST API backend — completely independent of the frontend.
 
@@ -142,7 +125,7 @@ Interactive Swagger docs: 👉 [http://localhost:8030/docs](http://localhost:803
 
 ---
 
-### 🌐 6. **Interactive Plotly Dash Frontend**
+### 🌐 5. **Interactive Plotly Dash Frontend**
 
 A rich, fully interactive frontend built with **Plotly Dash** and **Dash Bootstrap Components** — decoupled from the backend and communicating exclusively via the `APIClient`.
 
@@ -193,6 +176,10 @@ The frontend never directly imports backend modules — it communicates purely o
 | `rag_query(query)` | `GET /search/semantic_search` |
 
 ---
+
+### 🌐 6. **Samples from User Interface**
+
+
 
 ## 📁 Project Structure
 
