@@ -2,7 +2,7 @@
 ### *AI-Powered Maharashtra Forts Explorer & Knowledge Engine*
 
 **Pride-of-Sahyadri** is an AI-driven exploration and intelligence platform built around the historic forts of Maharashtra, India.  
-It blends **Machine Learning**, **Semantic Search (RAG)**, **Geospatial Analysis**, and a clean **FastAPI backend** to create a powerful knowledge hub for trekkers, historians, researchers, and proud Maharashtrians who value the Sahyadri heritage.
+It blends **Machine Learning**, **Semantic Search (RAG)**, and a clean **FastAPI backend** to create a powerful knowledge hub for trekkers, historians, researchers, and proud Maharashtrians who value the Sahyadri heritage.
 
 This project honors the legacy of the Maratha Empire and the timeless forts that stand as symbols of resilience, strategy, and regional pride.
 
@@ -116,8 +116,6 @@ uvicorn src.api.main:app --reload --port 8030
 | `GET` | `/forts` | List forts (supports `?q=`, `?district=`, `?limit=`) |
 | `GET` | `/forts/{fort_id}` | Single fort details |
 | `GET` | `/search/semantic_search?q=` | RAG-powered semantic Q&A |
-| `GET` | `/clusters` | Cluster summary counts |
-| `GET` | `/clusters/data` | All forts with cluster labels |
 | `GET` | `/recommend/nearby` | Forts near a coordinate |
 | `GET` | `/recommend/similar/{fort_id}` | Similar forts by type/elevation |
 
@@ -171,8 +169,6 @@ The frontend never directly imports backend modules — it communicates purely o
 | `get_fort(fort_id)` | `GET /forts/{fort_id}` |
 | `get_nearby(lat, lon, k)` | `GET /recommend/nearby` |
 | `get_similar(fort_id, k)` | `GET /recommend/similar/{fort_id}` |
-| `get_clusters()` | `GET /clusters` |
-| `get_clustered_forts()` | `GET /clusters/data` |
 | `rag_query(query)` | `GET /search/semantic_search` |
 
 ---
@@ -279,7 +275,6 @@ pytest tests/
 | **RAG / NLP** | Sentence-Transformers (`all-MiniLM-L6-v2`), Hugging Face (`flan-t5-base`) |
 | **LLM (Q&A)** | Ollama (`mistral`) |
 | **ML** | Scikit-learn (K-Means), NumPy, PyTorch |
-| **Geospatial** | GeoPy |
 | **Data** | Pandas |
 | **Logging** | Python `logging` with `RotatingFileHandler` |
 | **Testing** | Pytest, FastAPI TestClient |
