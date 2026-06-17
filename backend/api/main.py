@@ -1,4 +1,4 @@
-from backend.api.routers import clustering, forts, recommend
+from backend.api.routers import forts, recommend
 from fastapi import FastAPI
 import sys
 sys.path.append("/home/vasant/projects/Pride-of-Sahyadri")
@@ -11,8 +11,6 @@ app = FastAPI(title="Maharashtra Forts API")
 def init_routes(app: FastAPI):
     app.include_router(forts.router, prefix="/forts", tags=["forts"])
     app.include_router(search.router, prefix="/search", tags=["search"])
-    app.include_router(clustering.router,
-                       prefix="/forts/{id}", tags=["clustering"])
     app.include_router(
         recommend.router, prefix="/recommend", tags=["recommend"])
 
