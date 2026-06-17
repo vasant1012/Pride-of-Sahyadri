@@ -28,6 +28,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
+import { getMeta, getStats, getForts, getSimilarForts, querySemanticSearch } from '@/lib/backend';
 
 const DIFFICULTY_COLOR = {
   Easy: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900',
@@ -589,13 +590,21 @@ function RecommendationsPage({ forts, selectedFort, setSelectedFort }) {
       if (!selectedFort) return;
       setLoading(true);
       try {
-        const res = await fetch('/api/recommend', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fortId: selectedFort.id, topN: 6 }),
-        });
-        const data = await res.json();
-        if (!cancel) setRecs(data.recommendations || []);
+        const data = await getSimilarForts(parseInt(selectedFort.id, 10), 6);
+        if (!cancel) {
+          setRecs(data.map((fort) => ({
+            fort,
+            score: 100,
+            reasons: [
+              `Same type: ${fort.type}`,
+              `Similar difficulty: ${fort.difficulty}`,
+              `Elevation: ${fort.elevation}m`,
+            ],
+          })));
+        }
+      } catch (error) {
+        console.error(error);
+        if (!cancel) setRecs([]);
       } finally {
         if (!cancel) setLoading(false);
       }
@@ -766,14 +775,8 @@ function AIGuidePage() {
     setMessages((m) => [...m, { role: 'user', content: q }]);
     setLoading(true);
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: q, session_id: sessionId }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setMessages((m) => [...m, { role: 'assistant', content: data.answer }]);
+      const answer = await querySemanticSearch(q);
+      setMessages((m) => [...m, { role: 'assistant', content: answer }]);
     } catch (e) {
       setMessages((m) => [...m, { role: 'assistant', content: `**Sorry, something went wrong.** ${e.message}` }]);
       toast.error('AI request failed');
@@ -885,14 +888,14 @@ function App() {
     async function load() {
       try {
         const [metaRes, statsRes, allFortsRes] = await Promise.all([
-          fetch('/api/meta').then(r => r.json()),
-          fetch('/api/stats').then(r => r.json()),
-          fetch('/api/forts').then(r => r.json()),
+          getMeta(),
+          getStats(),
+          getForts(),
         ]);
         setMeta(metaRes);
         setStats(statsRes);
-        setAllForts(allFortsRes.forts || []);
-        if (!selectedFort && allFortsRes.forts?.length) setSelectedFort(allFortsRes.forts[0]);
+        setAllForts(allFortsRes);
+        if (!selectedFort && allFortsRes?.length) setSelectedFort(allFortsRes[0]);
       } catch (e) { console.error(e); }
     }
     load();
@@ -903,18 +906,19 @@ function App() {
     async function load() {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
         const a = appliedFilters;
-        if (a.q) params.set('q', a.q);
-        if (a.district !== 'all') params.set('district', a.district);
-        if (a.type !== 'all') params.set('type', a.type);
-        if (a.difficulty !== 'all') params.set('difficulty', a.difficulty);
-        if (a.season !== 'all') params.set('season', a.season);
-        if (a.water !== 'all') params.set('water', a.water);
-        params.set('minElev', a.elev[0]);
-        params.set('maxElev', a.elev[1]);
-        const res = await fetch('/api/forts?' + params.toString()).then(r => r.json());
-        setForts(res.forts || []);
+        const params = {
+          q: a.q || undefined,
+          district: a.district !== 'all' ? a.district : undefined,
+          type: a.type !== 'all' ? a.type : undefined,
+          difficulty: a.difficulty !== 'all' ? a.difficulty : undefined,
+          season: a.season !== 'all' ? a.season : undefined,
+          water: a.water !== 'all' ? a.water : undefined,
+          minElev: a.elev[0],
+          maxElev: a.elev[1],
+        };
+        const results = await getForts(params);
+        setForts(results);
       } finally {
         setLoading(false);
       }
