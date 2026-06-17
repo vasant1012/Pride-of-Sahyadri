@@ -1,6 +1,6 @@
 import sys
 sys.path.append("/home/pamya/Python/ML_Projects/maharashtra-forts")
-from src.core.data_loader import load_forts
+from backend.core.data_loader import load_forts
 
 
 def test_load_exists():
