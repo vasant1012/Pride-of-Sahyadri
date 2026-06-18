@@ -66,10 +66,10 @@ function Header({ tab, setTab }) {
             <Castle className="h-5 w-5" />
           </div>
           <div className="flex flex-col leading-none">
-            <span className="text-[15px] font-bold tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <span className="text-[15px] font-bold tracking-tight" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               Pride of Sahyadri
             </span>
-            <span className="text-[11px] text-muted-foreground">Maharashtra Forts Heritage</span>
+            <span className="text-[11px] text-muted-foreground" style={{ fontFamily: "'Poppins', sans-serif" }}>Maharashtra Forts Heritage</span>
           </div>
         </div>
 
@@ -117,7 +117,7 @@ function Header({ tab, setTab }) {
           </Button>
           <Avatar className="h-9 w-9 ring-2 ring-emerald-200/60 dark:ring-emerald-900/40">
             <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white font-semibold text-xs">
-              पS
+              VR
             </AvatarFallback>
           </Avatar>
         </div>
@@ -791,7 +791,7 @@ function AIGuidePage() {
         <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl" />
         <div className="relative max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 dark:border-amber-900 bg-amber-50/80 dark:bg-amber-950/50 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-            <Sparkles className="h-3.5 w-3.5" /> Powered by GPT-5 · Retrieval-Augmented
+            <Sparkles className="h-3.5 w-3.5" /> Powered by Google Gemma 4:e12b (SOTA Local) · Retrieval-Augmented
           </div>
           <h1 className="mt-3 text-3xl md:text-4xl font-bold tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
             Ask Anything About Maharashtra Forts

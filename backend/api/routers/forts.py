@@ -63,7 +63,8 @@ def list_forts(
         df = df[df["trek_difficulty"].str.lower() == difficulty.lower()]
 
     if season and season.lower() != "all":
-        df = df[df["best_season"].str.lower().str.contains(season.lower(), na=False)]
+        df = df[df["best_season"].str.lower().str.contains(
+            season.lower(), na=False)]
 
     if water and water.lower() != "all":
         df = df[df["water_availability"].str.lower() == water.lower()]
@@ -85,9 +86,18 @@ def list_forts(
 def get_meta():
     districts = sorted(DF["district"].dropna().astype(str).unique().tolist())
     types = sorted({normalize_fort_type(v) for v in DF["type"].fillna("")})
-    difficulties = sorted(DF["trek_difficulty"].dropna().astype(str).unique().tolist())
-    seasons = sorted({season for value in DF["best_season"].fillna("").tolist() for season in normalize_seasons(value)})
-    water_options = sorted(DF["water_availability"].dropna().astype(str).unique().tolist())
+    difficulties = sorted(
+        DF["trek_difficulty"].dropna().astype(str).unique().tolist())
+    seasons = sorted(
+        {
+            season
+            for value in DF["best_season"].fillna("").tolist()
+            for season in normalize_seasons(value)
+        }
+    )
+    water_options = sorted(
+        DF["water_availability"].dropna().astype(str).unique().tolist()
+    )
 
     return {
         "districts": districts,
@@ -122,9 +132,13 @@ def get_stats():
             "trekRoutes": int(df[df["elevation_m"] > 0].shape[0]),
             "heritageSites": len(df),
         },
-        "byType": [{"name": name, "value": value} for name, value in by_type.items()],
-        "byDifficulty": [{"name": name, "value": value} for name, value in by_difficulty.items()],
-        "byDistrict": [{"name": name, "value": value} for name, value in by_district.items()],
+        "byType": [{"name": name, "value": value} for name, value in by_type.items()], # NOQA E501
+        "byDifficulty": [
+            {"name": name, "value": value} for name, value in by_difficulty.items() # NOQA E501
+        ],
+        "byDistrict": [
+            {"name": name, "value": value} for name, value in by_district.items() # NOQA E501
+        ],
         "elevations": elevations,
     }
 

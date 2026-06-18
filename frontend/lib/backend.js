@@ -52,12 +52,12 @@ async function fetchJson(url, init) {
 }
 
 export async function getMeta() {
-  const data = await fetchJson(buildUrl('/meta'));
+  const data = await fetchJson(buildUrl('/forts/meta'));
   return data;
 }
 
 export async function getStats() {
-  const data = await fetchJson(buildUrl('/stats'));
+  const data = await fetchJson(buildUrl('/forts/stats'));
   return data;
 }
 

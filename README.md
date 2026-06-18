@@ -105,7 +105,7 @@ A decoupled REST API backend — completely independent of the frontend.
 **Run the backend:**
 
 ```bash
-uvicorn src.api.main:app --reload --port 8030
+uvicorn backend.api.main:app --reload --port 8030
 ```
 
 **Available Endpoints:**
