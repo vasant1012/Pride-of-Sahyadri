@@ -20,25 +20,24 @@ else:
 
 
 @router.get("/semantic_search")
-def semantic_search(q: str):
+def semantic_search(q: str, top_k: int = 3):
     """Semantic search / mini-QA endpoint.
 
     Args:
         q (str): query text
-        top_k (int): number of results
+        top_k (int): number of retrieved contexts
 
     Returns:
-        list of retrieved notes with similarity score
+        generated answer from the RAG pipeline
     """
     if rag is None:
         return {"error": f"RAG engine unavailable: {INIT_ERROR}"}
 
     try:
-        results = rag.retrieve(q, top_k=3)
+        results = rag.retrieve(q, top_k=top_k)
         context = rag.build_context(results)
         response = rag.generate_answer(context, q)
     except Exception as e:
         return {"error": str(e)}
 
-    # format results
     return response
