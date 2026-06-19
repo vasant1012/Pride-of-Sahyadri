@@ -791,7 +791,7 @@ function AIGuidePage() {
         <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl" />
         <div className="relative max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 dark:border-amber-900 bg-amber-50/80 dark:bg-amber-950/50 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-            <Sparkles className="h-3.5 w-3.5" /> Powered by Google Gemma 4:e12b (SOTA Local) · Retrieval-Augmented
+            <Sparkles className="h-3.5 w-3.5" /> Powered by Qwen2:1.5b-instruct(SOTA Local) | Retrieval-Augmented
           </div>
           <h1 className="mt-3 text-3xl md:text-4xl font-bold tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
             Ask Anything About Maharashtra Forts

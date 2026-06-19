@@ -9,8 +9,6 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 
-# from transformers import AutoModelForCausalLM, AutoTokenizer
-
 
 class RAGEngine:
     def __init__(self, cache_dir="rag_cache"):
@@ -27,13 +25,6 @@ class RAGEngine:
         self.corpus = ""
         self.embeddings = None
         self.embed_model = SentenceTransformer("all-MiniLM-L6-v2")
-        # model_name = "Qwen/Qwen2-1.5B-Instruct"
-        # self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        # self.llm_model = AutoModelForCausalLM.from_pretrained(
-        #     model_name,
-        #     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,  # NOQA E501
-        #     device_map="auto",
-        # )
 
     def fort_dict_to_paragraph(self, data: dict) -> str:
         return (
@@ -143,57 +134,20 @@ class RAGEngine:
     def build_context(self, results):
         return "\n\n".join([chunk for chunk, _ in results])
 
-    # -------------------------------------------------------
-    # 4. LLM Generation (Ollama)
-    # -------------------------------------------------------
-    # def generate_answer(self, context, query):
-    #     prompt = f"""
-    #     You are a retrieval-augmented assistant.
-
-    #     Rules:
-    #     - Answer ONLY from the provided context
-    #     - If answer not present, say "Not found"
-    #     - Be concise and factual
-
-    #     Context:
-    #     {context}
-
-    #     Question:
-    #     {query}
-
-    #     Answer:
-    #     """
-
-    #     inputs = self.tokenizer(prompt, return_tensors="pt").to(
-    #         self.llm_model.device)
-
-    #     outputs = self.llm_model.generate(
-    #         **inputs,
-    #         max_new_tokens=120,
-    #         temperature=0.3,
-    #         do_sample=True,
-    #         eos_token_id=self.tokenizer.eos_token_id,
-    #     )
-
-    #     decoded = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-    #     return decoded.split("Answer:")[-1].strip()
-
     def generate_answer(self, context, query):
-        prompt = f"""
-                You are a precise assistant. Answer ONLY from the
-                given context.
-
-                Context:
-                {context}
-
-                Question:
-                {query}
-                """
+        prompt = (
+            "You are a precise assistant. Answer ONLY from the context. "
+            "If the answer is not in the context, reply exactly: Not found. "
+            "Keep the answer to 1-3 short sentences.\n\n"
+            f"Context:\n{context}\n\n"
+            f"Question: {query}\n"
+            "Answer:"
+        )
 
         response = requests.post(
             "http://localhost:11434/api/generate",
-            json={"model": "mistral", "prompt": prompt, "stream": False},
+            json={"model": "qwen2:1.5b-instruct",
+                  "prompt": prompt, "stream": False},
         )
 
         return response.json()["response"]
